@@ -91,19 +91,25 @@
     }
 
     async function send() {
-      const message = messageInput.value.trim();
-      if (!message) return;
-      appendMessage("You", message);
-      messageInput.value = "";
-      const res = await fetch("https://mantra-backend.onrender.com/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, message })
-      });
-      const data = await res.json();
-      appendMessage("MANTRA", `${data.reply} (Mood: ${data.emotion})`);
-    }
+  const message = messageInput.value.trim();
+  if (!message) return;
+  appendMessage("You", message);
+  messageInput.value = "";
 
+  const res = await fetch("https://mantra-backend.onrender.com/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, message })
+  });
+
+  const data = await res.json();
+  console.log("Backend Reply:", data); // Debug line
+  if (data.reply && data.emotion) {
+    appendMessage("MANTRA", `${data.reply} (Mood: ${data.emotion})`);
+  } else {
+    appendMessage("MANTRA", "Sorry, I didn't understand that.");
+  }
+}
     messageInput.addEventListener("keydown", function(e) {
       if (e.key === "Enter") send();
     });
