@@ -40,7 +40,6 @@
       font-weight: bold;
       cursor: pointer;
     }
-
     .bubbles {
       position: absolute;
       top: 0; left: 0;
@@ -49,7 +48,6 @@
       z-index: 0;
       overflow: hidden;
     }
-
     .bubble {
       position: absolute;
       bottom: -100px;
@@ -57,7 +55,6 @@
       border-radius: 50%;
       animation: rise 20s infinite ease-in;
     }
-
     @keyframes rise {
       0% { transform: translateY(0) scale(1); }
       100% { transform: translateY(-1200px) scale(1.5); }
@@ -67,46 +64,63 @@
 <body>
   <div class="login-card">
     <h2>Welcome to MANTRA</h2>
-    <input type="email" id="email" placeholder="Enter your email" />
+    <input type="email" id="email" placeholder="Enter your Gmail address" />
     <input type="password" id="password" placeholder="Enter your password" />
     <button onclick="register()">Register</button>
     <button onclick="login()">Login</button>
   </div>
-
   <div class="bubbles"></div>
   <script>
     const API = "https://mantra-backend.onrender.com";
+
+    function isValidGmail(email) {
+      return /^[a-zA-Z0-9._%+-]+@gmail\.com$/.test(email);
+    }
 
     async function register() {
       const email = document.getElementById("email").value;
       const password = document.getElementById("password").value;
       if (!email || !password) return alert("Please fill both fields.");
+      if (!isValidGmail(email)) return alert("Please enter a valid Gmail address.");
 
-      const res = await fetch(`${API}/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password })
-      });
-      const data = await res.json();
-      alert(data.message);
+      try {
+        const res = await fetch(`${API}/register`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        console.log("Register response:", data);
+        alert(data.message);
+      } catch (err) {
+        console.error("Register error:", err);
+        alert("Failed to connect to backend.");
+      }
     }
 
     async function login() {
       const email = document.getElementById("email").value;
       const password = document.getElementById("password").value;
       if (!email || !password) return alert("Please fill both fields.");
+      if (!isValidGmail(email)) return alert("Please enter a valid Gmail address.");
 
-      const res = await fetch(`${API}/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password })
-      });
-      const data = await res.json();
-      if (data.success) {
-        localStorage.setItem("mantra_email", email);
-        window.location.href = "index.html";
-      } else {
-        alert(data.message);
+      try {
+        const res = await fetch(`${API}/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        console.log("Login response:", data);
+        if (data.success) {
+          localStorage.setItem("mantra_email", email);
+          window.location.href = "index.html";
+        } else {
+          alert(data.message);
+        }
+      } catch (err) {
+        console.error("Login error:", err);
+        alert("Failed to connect to backend.");
       }
     }
 
