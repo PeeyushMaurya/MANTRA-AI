@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>MANTRA Auth</title>
+  <script>
+    function login() {
+      const email = document.getElementById('email').value;
+      if (!email) return alert("Please enter your email");
+      localStorage.setItem('mantra_email', email);
+      fetch('https://mantra-api.onrender.com/login', {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email })
+      }).then(() => window.location.href = 'index.html');
+    }
+  </script>
+</head>
+<body>
+  <h2>Welcome to MANTRA</h2>
+  <input id="email" type="email" placeholder="Enter your email" />
+  <button onclick="login()">Login</button>
+</body>
+</html>
