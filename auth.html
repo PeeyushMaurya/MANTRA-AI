@@ -79,7 +79,7 @@
       const email = document.getElementById('email').value;
       if (!email) return alert("Please enter your email");
       localStorage.setItem('mantra_email', email);
-      fetch('https://mantra-api.onrender.com/login', {
+      fetch('https://mantra-backend.onrender.com/login', {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email })
