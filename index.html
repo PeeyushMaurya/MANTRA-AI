@@ -4,47 +4,116 @@
   <meta charset="UTF-8" />
   <title>MANTRA Chat</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #4facfe, #00f2fe);
+      color: #000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      position: relative;
+      overflow: hidden;
+    }
+    .chat-container {
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      padding: 20px;
+      margin-top: 30px;
+      width: 90%;
+      max-width: 600px;
+      z-index: 1;
+    }
+    #chatbox {
+      max-height: 300px;
+      overflow-y: auto;
+      margin-bottom: 10px;
+    }
+    input, button {
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      margin: 5px 2px;
+    }
+    #message {
+      width: 70%;
+    }
+    .bubbles {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      overflow: hidden;
+    }
+    .bubble {
+      position: absolute;
+      bottom: -100px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 50%;
+      animation: rise 20s infinite ease-in;
+    }
+    @keyframes rise {
+      0% { transform: translateY(0) scale(1); }
+      100% { transform: translateY(-1200px) scale(1.5); }
+    }
+  </style>
 </head>
 <body>
-  <h1>MANTRA Chat Interface</h1>
-  <div id="chatbox" style="height: 300px; overflow-y: auto;"></div>
-  <input id="message" placeholder="Type a message..." />
-  <button onclick="send()">Send</button>
-  <button onclick="darkMode()">Toggle Dark Mode</button>
-  <button onclick="showAffirmation()">Affirmation</button>
-  <button onclick="startBreathing()">Breathing</button>
-  <button onclick="loadMood()">Mood Graph</button>
-  <canvas id="moodChart" width="400" height="200" style="display:none;"></canvas>
+  <div class="chat-container">
+    <h2>MANTRA - Your Companion</h2>
+    <div id="chatbox"></div>
+    <input id="message" placeholder="Type your message..." />
+    <button onclick="send()">Send</button>
+    <button onclick="toggleDarkMode()">Dark Mode</button>
+    <button onclick="showAffirmation()">Affirmation</button>
+    <button onclick="startBreathing()">Breathing</button>
+    <button onclick="loadMood()">Mood Graph</button>
+    <button onclick="startVoiceInput()">🎤</button>
+    <canvas id="moodChart" width="400" height="200" style="margin-top:20px; display:none;"></canvas>
+  </div>
+  <div class="bubbles"></div>
+
   <script>
     const email = localStorage.getItem('mantra_email');
-    const chatbox = document.getElementById('chatbox');
-    const messageInput = document.getElementById('message');
+    const chatbox = document.getElementById("chatbox");
+    const messageInput = document.getElementById("message");
+    let isDark = false;
+
+    function appendMessage(sender, text) {
+      const div = document.createElement('div');
+      div.textContent = `${sender}: ${text}`;
+      chatbox.appendChild(div);
+      chatbox.scrollTop = chatbox.scrollHeight;
+    }
 
     async function send() {
-      const message = messageInput.value;
+      const message = messageInput.value.trim();
+      if (!message) return;
+      appendMessage("You", message);
       messageInput.value = "";
-      chatbox.innerHTML += "<div>User: " + message + "</div>";
       const res = await fetch("https://mantra-api.onrender.com/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, message })
       });
       const data = await res.json();
-      chatbox.innerHTML += "<div>Bot: " + data.reply + " (Mood: " + data.emotion + ")</div>";
+      appendMessage("MANTRA", `${data.reply} (Mood: ${data.emotion})`);
     }
 
-    function darkMode() {
-      document.body.style.background = "#1e1e2f";
-      document.body.style.color = "#eee";
-    }
+    messageInput.addEventListener("keydown", function(e) {
+      if (e.key === "Enter") send();
+    });
 
-    function showAffirmation() {
-      const list = ["You're doing great.", "You matter.", "You're strong."];
-      alert(list[Math.floor(Math.random() * list.length)]);
-    }
-
-    function startBreathing() {
-      alert("Inhale... Hold... Exhale... Repeat.");
+    async function loadChatHistory() {
+      const res = await fetch(`https://mantra-api.onrender.com/chat_history?email=${email}`);
+      const data = await res.json();
+      data.forEach(msg => {
+        appendMessage(msg.sender, `${msg.message} (${msg.emotion})`);
+      });
     }
 
     async function loadMood() {
@@ -57,7 +126,7 @@
         data: {
           labels: data.labels,
           datasets: [{
-            label: 'Mood',
+            label: 'Mood History',
             data: data.values,
             borderColor: 'white',
             fill: false
@@ -66,17 +135,47 @@
       });
     }
 
-    window.onload = async () => {
-      const res = await fetch("https://mantra-api.onrender.com/chat_history?email=" + email);
-      const data = await res.json();
-      data.forEach(c => {
-        chatbox.innerHTML += `<div>${c.sender}: ${c.message} (${c.emotion})</div>`;
-      });
+    function toggleDarkMode() {
+      isDark = !isDark;
+      document.body.style.background = isDark
+        ? "linear-gradient(to right, #111, #333)"
+        : "linear-gradient(to right, #4facfe, #00f2fe)";
+      document.body.style.color = isDark ? "#eee" : "#000";
     }
 
-    messageInput.addEventListener("keydown", function(e) {
-      if (e.key === "Enter") send();
-    });
+    function showAffirmation() {
+      const quotes = ["You are doing great.", "You matter.", "You are enough.", "Keep going!"];
+      alert(quotes[Math.floor(Math.random() * quotes.length)]);
+    }
+
+    function startBreathing() {
+      alert("Inhale… Hold… Exhale… Repeat slowly.");
+    }
+
+    function startVoiceInput() {
+      if (!('webkitSpeechRecognition' in window)) return alert("Mic not supported in this browser");
+      const recognition = new webkitSpeechRecognition();
+      recognition.lang = "en-US";
+      recognition.start();
+      recognition.onresult = function(event) {
+        messageInput.value = event.results[0][0].transcript;
+        send();
+      };
+    }
+
+    // Bubble background generator
+    const bubbles = document.querySelector(".bubbles");
+    for (let i = 0; i < 25; i++) {
+      const b = document.createElement("div");
+      b.classList.add("bubble");
+      b.style.left = `${Math.random() * 100}%`;
+      const size = Math.random() * 30 + 10;
+      b.style.width = b.style.height = `${size}px`;
+      b.style.animationDuration = `${Math.random() * 15 + 10}s`;
+      bubbles.appendChild(b);
+    }
+
+    window.onload = loadChatHistory;
   </script>
 </body>
 </html>
