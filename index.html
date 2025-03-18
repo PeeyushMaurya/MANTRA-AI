@@ -60,6 +60,21 @@
       0% { transform: translateY(0) scale(1); }
       100% { transform: translateY(-1200px) scale(1.5); }
     }
+
+    /* Logout button */
+    .logout-btn {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 10px;
+      background: #fff;
+      color: #333;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      z-index: 2;
+    }
   </style>
 </head>
 <body>
@@ -75,6 +90,7 @@
     <button onclick="startVoiceInput()">🎤</button>
     <canvas id="moodChart" width="400" height="200" style="margin-top:20px; display:none;"></canvas>
   </div>
+  <button class="logout-btn" onclick="logout()">Logout</button>
   <div class="bubbles"></div>
 
   <script>
@@ -91,35 +107,42 @@
     }
 
     async function send() {
-  const message = messageInput.value.trim();
-  if (!message) return;
-  appendMessage("You", message);
-  messageInput.value = "";
+      const message = messageInput.value.trim();
+      if (!message) return;
+      appendMessage("You", message);
+      messageInput.value = "";
 
-  const res = await fetch("https://mantra-backend.onrender.com/chat", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, message })
-  });
+      const res = await fetch("https://mantra-backend.onrender.com/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, message })
+      });
 
-  const data = await res.json();
-  console.log("Backend Reply:", data); // Debug line
-  if (data.reply && data.emotion) {
-    appendMessage("MANTRA", `${data.reply} (Mood: ${data.emotion})`);
-  } else {
-    appendMessage("MANTRA", "Sorry, I didn't understand that.");
-  }
-}
+      const data = await res.json();
+      if (data.reply && data.emotion) {
+        appendMessage("MANTRA", `${data.reply} (Mood: ${data.emotion})`);
+      } else {
+        appendMessage("MANTRA", "Sorry, I didn't understand that.");
+      }
+    }
+
     messageInput.addEventListener("keydown", function(e) {
       if (e.key === "Enter") send();
     });
 
     async function loadChatHistory() {
-      const res = await fetch(`https://mantra-backend.onrender.com/chat_history?email=${email}`);
-      const data = await res.json();
-      data.forEach(msg => {
-        appendMessage(msg.sender, `${msg.message} (${msg.emotion})`);
+      const res = await fetch("https://mantra-backend.onrender.com/chat-history", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email })
       });
+
+      const data = await res.json();
+      if (data && data.history) {
+        data.history.forEach(msg => {
+          appendMessage(msg.sender === "bot" ? "MANTRA" : "You", msg.message);
+        });
+      }
     }
 
     async function loadMood() {
@@ -167,6 +190,11 @@
         messageInput.value = event.results[0][0].transcript;
         send();
       };
+    }
+
+    function logout() {
+      localStorage.removeItem("mantra_email");
+      window.location.href = "auth.html";
     }
 
     // Bubble background generator
