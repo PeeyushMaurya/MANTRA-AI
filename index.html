@@ -95,7 +95,7 @@
       if (!message) return;
       appendMessage("You", message);
       messageInput.value = "";
-      const res = await fetch("https://mantra-api.onrender.com/chat", {
+      const res = await fetch("https://mantra-backend.onrender.com/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, message })
@@ -109,7 +109,7 @@
     });
 
     async function loadChatHistory() {
-      const res = await fetch(`https://mantra-api.onrender.com/chat_history?email=${email}`);
+      const res = await fetch(`https://mantra-backend.onrender.com/chat_history?email=${email}`);
       const data = await res.json();
       data.forEach(msg => {
         appendMessage(msg.sender, `${msg.message} (${msg.emotion})`);
@@ -117,7 +117,7 @@
     }
 
     async function loadMood() {
-      const res = await fetch("https://mantra-api.onrender.com/emotion_history");
+      const res = await fetch("https://mantra-backend.onrender.com/emotion_history");
       const data = await res.json();
       const ctx = document.getElementById("moodChart").getContext("2d");
       document.getElementById("moodChart").style.display = "block";
