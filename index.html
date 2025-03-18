@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>MANTRA - Companion Mode</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(120deg, #a1c4fd, #c2e9fb);
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .chat-container {
+      margin-top: 30px;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      padding: 20px;
+      width: 90%;
+      max-width: 600px;
+    }
+    #chatbox { max-height: 300px; overflow-y: auto; margin-bottom: 10px; }
+    .user, .bot {
+      margin: 10px 0;
+      padding: 12px;
+      border-radius: 12px;
+      max-width: 80%;
+      display: inline-block;
+    }
+    .user { background: #ffffff33; float: right; clear: both; }
+    .bot { background: #ffffff22; float: left; clear: both; }
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    input, button {
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    input { flex: 1; width: 100%; }
+    button { background: white; color: #333; font-weight: bold; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>MANTRA - Your Companion</h1>
+  <div class="chat-container">
+    <div id="chatbox"></div>
+    <div class="controls">
+      <input id="userinput" placeholder="Talk to MANTRA..." />
+      <button onclick="sendMessage()">Send</button>
+      <button onclick="startVoiceInput()">🎤</button>
+    </div>
+    <div style="text-align:center; margin-top:10px;">
+      <button onclick="showGraph()">Mood Graph</button>
+      <button onclick="showAffirmation()">Affirmation</button>
+      <button onclick="startBreathing()">Breathing</button>
+      <button onclick="toggleDarkMode()">Dark Mode</button>
+    </div>
+    <canvas id="moodChart" width="400" height="200" style="margin-top:20px; display:none;"></canvas>
+  </div>
+  <script>
+    const chatbox = document.getElementById("chatbox");
+    const input = document.getElementById("userinput");
+
+    function appendMessage(sender, text) {
+      const div = document.createElement('div');
+      div.className = sender;
+      div.innerText = text;
+      chatbox.appendChild(div);
+      chatbox.scrollTop = chatbox.scrollHeight;
+    }
+
+    async function sendMessage() {
+      const text = input.value.trim();
+      if (!text) return;
+      appendMessage("user", text);
+      input.value = "";
+      const res = await fetch("https://mantra-ai-backend.onrender.com/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text })
+      });
+      const data = await res.json();
+      appendMessage("bot", `${data.reply} (Mood: ${data.emotion})`);
+    }
+
+    function startVoiceInput() {
+      if (!('webkitSpeechRecognition' in window)) return alert("Mic not supported");
+      const recognition = new webkitSpeechRecognition();
+      recognition.lang = "en-US";
+      recognition.start();
+      recognition.onresult = function (event) {
+        input.value = event.results[0][0].transcript;
+        sendMessage();
+      };
+    }
+
+    function showGraph() {
+      const ctx = document.getElementById("moodChart").getContext("2d");
+      document.getElementById("moodChart").style.display = "block";
+      fetch("https://mantra-ai-backend.onrender.com/emotion_history")
+        .then(res => res.json())
+        .then(data => {
+          new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: data.labels,
+              datasets: [{
+                label: "Mood History",
+                data: data.values,
+                borderColor: "white",
+                backgroundColor: "rgba(255,255,255,0.2)",
+                fill: false
+              }]
+            }
+          });
+        });
+    }
+
+    function showAffirmation() {
+      alert("You are enough. You are not alone. You are stronger than you think.");
+    }
+
+    function startBreathing() {
+      alert("Breathe in... hold... breathe out... hold... Repeat 4x");
+    }
+
+    function toggleDarkMode() {
+      document.body.style.background = "linear-gradient(120deg, #1e1e2f, #2e2e3f)";
+      document.body.style.color = "#f0f0f0";
+    }
+
+    input.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        sendMessage();
+      }
+    });
+  </script>
+</body>
+</html>
